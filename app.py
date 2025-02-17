@@ -6,52 +6,81 @@ import pandas as pd
 with open('flight_price_model.pkl', 'rb') as file:
     model = pickle.load(file)
 
+# Load feature names used during training
+with open("feature_names.pkl", "rb") as f:
+    feature_names = pickle.load(f)
+
 # Define the prediction function
 def predict_price(input_data):
-    # Convert input data to DataFrame
-    input_df = pd.DataFrame([input_data])
-    # Make prediction
-    prediction = model.predict(input_df)
-    return prediction[0]
+    try:
+        # Convert input data to DataFrame
+        input_df = pd.DataFrame([input_data])
+
+        # One-hot encode categorical variables
+        input_df = pd.get_dummies(input_df)
+
+        # Ensure all expected columns are present
+        for col in feature_names:
+            if col not in input_df.columns:
+                input_df[col] = 0  # Add missing columns with 0
+
+        # Reorder columns to match training data
+        input_df = input_df[feature_names]
+
+        # Make prediction
+        prediction = model.predict(input_df)
+
+        return prediction[0]
+
+    except Exception as e:
+        return f"Error in prediction: {str(e)}"
 
 # Streamlit app
 def main():
-    st.title("Flight Price Prediction")
+    st.title("Flight Price Estimator")
 
-    # Input fields
-    airline = st.selectbox("Airline", ["Air Asia", "Air India", "GoAir","Indigo","Jet Airways","Jet Airways Business","Multiple Carriers","Multiple Carriers    Premium  Economy","SpiceJet","TruJet","Vistara","Vistara Premium Economy"])  # Replace with actual airline names
-    source = st.selectbox("Source", ["Bangalore", "Chennai", "Delhi","Kokata","Mumbai"])  # Replace with actual source cities
-    destination = st.selectbox("Destination", ["Bangalore", "Cochin", "Delhi","Hyderabad","Kolkata","New Delhi"])  # Replace with actual destination cities
-    total_stops = st.selectbox("Total Stops", [0, 1, 2, 3, 4])
-    journey_day = st.number_input("Journey Day", min_value=1, max_value=31, step=1)
-    journey_month = st.number_input("Journey Month", min_value=1, max_value=12, step=1)
-    dep_hour = st.number_input("Departure Hour", min_value=0, max_value=23, step=1)
-    dep_minute = st.number_input("Departure Minute", min_value=0, max_value=59, step=1)
-    arrival_hour = st.number_input("Arrival Hour", min_value=0, max_value=23, step=1)
-    arrival_minute = st.number_input("Arrival Minute", min_value=0, max_value=59, step=1)
-    duration_hours = st.number_input("Duration Hours", min_value=0, max_value=100, step=1)
-    duration_minutes = st.number_input("Duration Minutes", min_value=0, max_value=59, step=1)
+    # User Inputs
+    airlines = ["Air Asia", "Air India", "GoAir", "IndiGo", "Jet Airways", "Jet Airways Business", 
+                "Multiple carriers", "Multiple carriers Premium Economy", "SpiceJet", "Trujet", "Vistara", 
+                "Vistara Premium economy"]
+    Airline = st.selectbox("Select Airline", airlines)
 
-    # Create input data dictionary
+    sources = ["Bangalore", "Chennai", "Delhi", "Kolkata", "Mumbai"]
+    Source = st.selectbox("Select Source", sources)
+
+    destinations = ["Bangalore", "Cochin", "Delhi", "Hyderabad", "Kolkata", "New Delhi"]
+    Destination = st.selectbox("Select Destination", destinations)
+
+    Total_Stops = st.slider("Total Stops", 0, 4, 1)
+    Journey_Day = st.number_input("Journey Day", min_value=1, max_value=31, step=1)
+    Journey_Month = st.number_input("Journey Month", min_value=1, max_value=12, step=1)
+    Dep_Hour = st.slider("Departure Hour", 0, 23, 10)
+    Dep_Minute = st.slider("Departure Minute", 0, 59, 30)
+    Arrival_Hour = st.slider("Arrival Hour", 0, 23, 15)
+    Arrival_Minute = st.slider("Arrival Minute", 0, 59, 45)
+    Duration_Hours = st.slider("Duration Hours", 0, 24, 2)
+    Duration_Minutes = st.slider("Duration Minutes", 0, 59, 30)
+
+    # Prepare input data dictionary
     input_data = {
-        'Airline': airline,
-        'Source': source,
-        'Destination': destination,
-        'Total_Stops': total_stops,
-        'Journey_day': journey_day,
-        'Journey_month': journey_month,
-        'Dep_hour': dep_hour,
-        'Dep_minute': dep_minute,
-        'Arrival_hour': arrival_hour,
-        'Arrival_minute': arrival_minute,
-        'Duration_hours': duration_hours,
-        'Duration_minutes': duration_minutes
+        'Airline': Airline,
+        'Source': Source,
+        'Destination': Destination,
+        'Total_Stops': Total_Stops,
+        'Journey_Day': Journey_Day,
+        'Journey_Month': Journey_Month,
+        'Dep_Hour': Dep_Hour,
+        'Dep_Minute': Dep_Minute,
+        'Arrival_Hour': Arrival_Hour,
+        'Arrival_Minute': Arrival_Minute,
+        'Duration_Hours': Duration_Hours,
+        'Duration_Minutes': Duration_Minutes
     }
 
     # Predict button
-    if st.button("Predict"):
+    if st.button("Estimate Price"):
         result = predict_price(input_data)
-        st.success(f"Estimated Flight Price: ₹{result:.2f}")
+        st.success(f"Estimated Flight Price: ₹{result}")
 
 if __name__ == '__main__':
     main()
