@@ -30,7 +30,7 @@ def predict_price(input_data):
         # Make prediction
         prediction = model.predict(input_df)
 
-        return prediction[0]
+        return round(prediction[0])  # Round the estimated price
 
     except Exception as e:
         return f"Error in prediction: {str(e)}"
